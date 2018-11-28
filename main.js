@@ -1,4 +1,7 @@
-const {app, BrowserWindow} = require('electron');
+const {app, BrowserWindow, ipcMain} = require('electron');
+const SSH = require('simple-ssh');
+const cp = require('child_process');
+
 
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -44,7 +47,53 @@ app.on('activate', () => {
     if (win === null) {
         createWindow()
     }
-})
+});
 
-// 在这个文件中，你可以续写应用剩下主进程代码。
-// 也可以拆分成几个文件，然后用 require 导入。
+// 监听渲染进程发送的消息
+ipcMain.on('asynchronous-message', async (event, url) => {
+    let result;
+    try {
+        if (!url.indexOf('ssh') > -1) {
+            result = await execSSH(url);
+        } else {
+            result = await execShell(url);
+        }
+    } catch (e) {
+        app.quit()
+    }
+
+    // 发送消息到渲染进程
+    event.sender.send('asynchronous-reply', result);
+});
+
+
+// 执行ssh命令登录我的服务器
+function execSSH(url) {
+    return new Promise((resolve, reject) => {
+        const strUrl = url.split(' ').slice(1).join('').split('@');
+        console.log(strUrl);
+        const ssh = new SSH({
+            user: strUrl[0],
+            host: strUrl[1],
+            pass: strUrl[2]
+        });
+
+        ssh.exec('ls', {
+            out: function(stdout) {
+                resolve(stdout);
+            }
+        }).start();
+    });
+}
+
+// 执行正常的命令
+function execShell(shell) {
+    return new Promise((resolve, reject) => {
+        cp.exec(shell, function (err, stodout, stoderr) {
+            if (err) {
+                return reject(err);
+            }
+            resolve(stodout);
+        });
+    });
+}
