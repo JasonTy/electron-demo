@@ -1,12 +1,16 @@
 const {app, BrowserWindow, ipcMain} = require('electron');
-const SSH = require('simple-ssh');
-const cp = require('child_process');
+const server = require('./server');
 
 
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let win
+let win;
+let host = '';
+let user = '';
+let pass = '';
+let ssh;
+let serverObj;
 
 function createWindow () {
     // 创建浏览器窗口。
@@ -30,7 +34,7 @@ function createWindow () {
 // Electron 会在初始化后并准备
 // 创建浏览器窗口时，调用这个函数。
 // 部分 API 在 ready 事件触发后才能使用。
-app.on('ready', createWindow)
+app.on('ready', createWindow);
 
 // 当全部窗口关闭时退出。
 app.on('window-all-closed', () => {
@@ -39,7 +43,7 @@ app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
         app.quit()
     }
-})
+});
 
 app.on('activate', () => {
     // 在macOS上，当单击dock图标并且没有其他窗口打开时，
@@ -50,50 +54,29 @@ app.on('activate', () => {
 });
 
 // 监听渲染进程发送的消息
-ipcMain.on('asynchronous-message', async (event, url) => {
+ipcMain.on('asynchronous-message', async (event, sshstr) => {
     let result;
     try {
-        if (!url.indexOf('ssh') > -1) {
-            result = await execSSH(url);
+        if (sshstr.indexOf('ssh') > -1) {
+            const strUrl = sshstr.split(' ').slice(1).join('').split('@');
+            host = strUrl[1], user = strUrl[0], pass = strUrl[2];
+            serverObj = new server({
+                host,
+                user,
+                pass
+            });
+            const result01 = await serverObj._connection();
+            ssh = result01.ssh;
+            result = result01.result;
         } else {
-            result = await execShell(url);
+            let newSshStr = sshstr;
+            result = await serverObj._exec(newSshStr, ssh);
         }
     } catch (e) {
-        app.quit()
+        app.quit();
     }
 
     // 发送消息到渲染进程
-    event.sender.send('asynchronous-reply', result);
+    event.sender.send('asynchronous-reply', {result, sshstr});
 });
 
-
-// 执行ssh命令登录我的服务器
-function execSSH(url) {
-    return new Promise((resolve, reject) => {
-        const strUrl = url.split(' ').slice(1).join('').split('@');
-        console.log(strUrl);
-        const ssh = new SSH({
-            user: strUrl[0],
-            host: strUrl[1],
-            pass: strUrl[2]
-        });
-
-        ssh.exec('ls', {
-            out: function(stdout) {
-                resolve(stdout);
-            }
-        }).start();
-    });
-}
-
-// 执行正常的命令
-function execShell(shell) {
-    return new Promise((resolve, reject) => {
-        cp.exec(shell, function (err, stodout, stoderr) {
-            if (err) {
-                return reject(err);
-            }
-            resolve(stodout);
-        });
-    });
-}

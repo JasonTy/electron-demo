@@ -7,40 +7,72 @@
         body,html{
             margin:0px;
             height:100%;
+            background: black;
+            color: white;
+            font-size: 12px;
         }
 
-        textarea{
+        input{
             width:100%;
-            height:600px;
-            padding:12px;
+            height:20px;
+            padding:0px;
             margin:0px;
             border:0px;
             font-size: 18px;
         }
+
+        input[type="text"]{
+            background-color : black;
+            color: white;
+            font-size: 12px;
+        }
+
         *:focus {
             outline: none;
         }
     </style>
 </head>
 <body>
-<textarea id="message">
-
-</textarea>
+ <input type="text" id="message"/>
 </body>
 </html>
 <script type="text/javascript">
     var ipcRenderer = require('electron').ipcRenderer;
     document.onkeydown=function(event){
         var e = event || window.event || arguments.callee.caller.arguments[0];
-        if(e && e.keyCode==13){
+        if(e && e.keyCode == 13){
             var message = document.getElementById('message').value;
             // 使用 ipcRenderer.send 向主进程发送消息。
+            document.getElementById('message').value = '';
             ipcRenderer.send('asynchronous-message', message);
         }
     };
 
     // 监听主进程返回的消息
     ipcRenderer.on('asynchronous-reply', function (event, arg) {
-        document.getElementById('message').value = arg;
+        var id = document.getElementById('message');
+        // 命令行
+        id.insertAdjacentHTML('beforebegin', `<div><span style="color: #77bbe2">~~${getDate()}[?]</span>${arg.sshstr}</div>`);
+        // 执行结果
+        id.insertAdjacentHTML('beforebegin', `<div>~~${arg.result || 'Welcome to Jason '}</div>`);
     });
+
+    // 获取日期
+    function getDate() {
+        var date = new Date();
+        var nowMonth = date.getMonth() + 1;
+        var strDate = date.getDate();
+        if (nowMonth >= 1 && nowMonth <= 9) {
+            nowMonth = "0" + nowMonth;
+        }
+        if (strDate >= 0 && strDate <= 9) {
+            strDate = "0" + strDate;
+        }
+
+        var hour = date.getHours() < 10 ? "0" + date.getHours() : date.getHours();
+        var minute = date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes();
+        var second = date.getSeconds() < 10 ? "0" + date.getSeconds() : date.getSeconds();
+
+        return `${date.getFullYear()}-${nowMonth}-${strDate} ${hour}:${minute}:${second}`;
+    }
 </script>
