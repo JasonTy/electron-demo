@@ -29,7 +29,6 @@ class SSHServer {
         return new Promise((resolve, reject) => {
              ssh.exec(shell, {
                 out: function (stdout) {
-                    console.log(stdout);
                     resolve(stdout);
                 },
                 start: function () {

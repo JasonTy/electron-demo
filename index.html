@@ -10,18 +10,19 @@
             background: black;
             color: white;
             font-size: 12px;
+            overflow: hidden;
         }
 
-        input{
+        textarea{
             width:100%;
-            height:20px;
+            height:100%;
             padding:0px;
             margin:0px;
             border:0px;
             font-size: 18px;
         }
 
-        input[type="text"]{
+        textarea[type="text"]{
             background-color : black;
             color: white;
             font-size: 12px;
@@ -30,10 +31,45 @@
         *:focus {
             outline: none;
         }
+
+        .div-body {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .div-body-left {
+            position: absolute;
+            left: 0;
+            width: 20%;
+            height: 100%;
+            background-color: #40b6e0;
+            line-height: 20px;
+            cursor: pointer;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .div-body-right {
+            position: absolute;
+            right: 0;
+            width: 80%;
+            height: 600px;
+            overflow: auto;
+            background-color: black;
+        }
     </style>
 </head>
 <body>
- <input type="text" id="message"/>
+     <div class="div-body">
+         <div class="div-body-left">
+             <div>102.13.65.102</div>
+             <div>102.13.65.103</div>
+         </div>
+         <div class="div-body-right">
+             <textarea type="text" id="message"></textarea>
+         </div>
+     </div>
 </body>
 </html>
 <script type="text/javascript">
